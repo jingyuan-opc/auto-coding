@@ -1,0 +1,36 @@
+# Config files with secrets
+b
+
+# Process management
+.pids/
+
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+bundle/
+dist/
+*.mcpb
+
+/.superpowers/
+
+
+# Root-level temp/test files
+node_modules/
+package.json
+pnpm-lock.yaml
+
