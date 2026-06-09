@@ -3,13 +3,15 @@ name: soc-build
 description: "Use when an OpenSpec change has a tasks.md ready for implementation. Dispatches subagent per task with two-stage review, updates task status automatically."
 ---
 
-# BSS Build — Subagent-Driven Implementation
+# SOC Build — Subagent-Driven Implementation
 
 Execute OpenSpec tasks by dispatching a fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
 
 **Why subagents:** Each subagent gets isolated context with precisely crafted instructions. They never inherit session history — you construct exactly what they need. This preserves your own context for coordination.
 
-**Core principle:** Fresh subagent per task + two-stage review (spec then quality) + acceptance criteria verification = high quality, fast iteration. A task is NOT done until it passes all acceptance criteria defined in tasks.md.
+**Core principle:** Fresh subagent per task + self-planning from design context + two-stage review (spec then quality) + acceptance criteria verification = high quality, fast iteration. A task is NOT done until it passes all acceptance criteria defined in tasks.md.
+
+**Self-planning model:** Implementer subagents receive the task description AND full design context (proposal.md + design.md). They plan their own implementation approach — which files to touch, what interfaces to build, what test strategy to use — rather than relying on step-by-step instructions. This keeps soc-spec focused on design and lets each subagent reason about implementation within well-defined architectural constraints.
 
 **Continuous execution:** Do not pause between tasks. Execute all tasks without stopping. The only reasons to stop are: BLOCKED status you cannot resolve, ambiguity that genuinely prevents progress, 3 consecutive task failures, or all tasks complete.
 
@@ -31,8 +33,8 @@ When an OpenSpec change exists at `openspec/changes/<name>/` with a `tasks.md` c
 3. **Read context** — Load proposal.md and design.md for subagent context
 4. **For each task:**
    a. Mark task `🔄 in_progress` in tasks.md
-   b. Spawn Agent (general-purpose) with context from proposal.md, design.md, and current task description (use `./implementer-prompt.md` template)
-   c. Run spec compliance review (use `./spec-reviewer-prompt.md` template)
+   b. Spawn Agent (general-purpose) with full design context using `./implementer-prompt.md` template — subagent plans and implements autonomously
+   c. Run spec compliance review (use `./spec-reviewer-prompt.md` template) — verifies both task compliance and design alignment
    d. If spec review fails → implementer fixes, max 2 retries
    e. Run code quality review (use `./code-quality-reviewer-prompt.md` template)
    f. If quality review fails → implementer fixes, max 2 retries
@@ -49,9 +51,11 @@ When an OpenSpec change exists at `openspec/changes/<name>/` with a `tasks.md` c
 Each implementer subagent receives:
 - Change name
 - proposal.md content (why we're doing this)
-- design.md content (how to build it)
-- Current task description (what to implement)
+- design.md content (architecture and constraints — the subagent uses this to plan its approach)
+- Current task description with acceptance criteria (what to implement and when it's done)
 - Project root directory path
+
+The subagent is responsible for deriving its own implementation plan (files, interfaces, test strategy) from the design context. The controller does not provide step-by-step instructions.
 
 ## Status Markers in tasks.md
 
@@ -62,16 +66,20 @@ Each implementer subagent receives:
 
 ## Model Selection
 
-- **Simple tasks** (1-2 files, clear spec): fast model
-- **Integration tasks** (multi-file, patterns): standard model
-- **Review tasks** (architecture, judgment): most capable model
+Since implementers now self-plan from design context, they need sufficient reasoning capability:
+
+- **Simple tasks** (clear scope, 1-2 files, well-defined interfaces in design): standard model
+- **Integration tasks** (multi-file, pattern matching, needs to understand existing codebase): capable model
+- **Architecture-adjacent tasks** (touches core abstractions, needs design judgment): most capable model
+
+Review subagents always use the most capable available model.
 
 ## Handling Implementer Status
 
 - **DONE:** Proceed to spec compliance review
 - **DONE_WITH_CONCERNS:** Read concerns, proceed if observations only
 - **NEEDS_CONTEXT:** Provide missing context, re-dispatch
-- **BLOCKED:** Assess blocker, escalate if needed
+- **BLOCKED:** Assess blocker — provide context, upgrade model, or break task into smaller pieces. Never force the same approach to retry without changes.
 
 ## Failure Handling
 
@@ -86,7 +94,7 @@ Each implementer subagent receives:
 
 After all tasks, output:
 ```
-BSS Build Complete: <name>
+SOC Build Complete: <name>
 Total: N tasks | ✅ Passed: X | ❌ Failed: Y
 Tasks:
   ✅ 1.1 Create theme context

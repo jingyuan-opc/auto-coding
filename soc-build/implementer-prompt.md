@@ -10,7 +10,7 @@ Agent tool (general-purpose):
 
     ## Task Description
 
-    [FULL TEXT of task from tasks.md - paste it here, don't make subagent read file]
+    [FULL TEXT of task from tasks.md — includes acceptance criteria]
 
     ## Context
 
@@ -20,101 +20,105 @@ Agent tool (general-purpose):
     **Why (from proposal.md):**
     [proposal.md content]
 
-    **How (from design.md):**
+    **Architecture (from design.md):**
     [design.md content]
 
-    ## Before You Begin
+    ## Phase 1: Understand & Plan
 
-    If you have questions about:
-    - The requirements or acceptance criteria
-    - The approach or implementation strategy
-    - Dependencies or assumptions
-    - Anything unclear in the task description
+    Before writing any code, build your implementation plan:
 
-    **Ask them now.** Raise any concerns before starting work.
+    1. **Understand scope** — What exactly does this task require? What are the acceptance criteria?
+    2. **Map the design** — From design.md, extract:
+       - Which files to create or modify (follow the file structure defined in design)
+       - Key interfaces, types, and contracts you must conform to
+       - How this task fits into the broader architecture (dependencies, consumers)
+       - Constraints and conventions from the design
+    3. **Plan your approach:**
+       - File list: which files you'll touch and what each change does
+       - Implementation order: what to build first, what depends on what
+       - Test strategy (see Testing section below)
+    4. **Identify risks** — Anything unclear, ambiguous, or potentially outside the design scope
 
-    ## Your Job
+    If anything is unclear about requirements, approach, or constraints — **ask now**.
+    Do not proceed with assumptions. It is always OK to pause and clarify.
 
-    Once you're clear on requirements:
-    1. Implement exactly what the task specifies
-    2. Write tests (following TDD if task says to)
-    3. Verify implementation works
-    4. Commit your work
-    5. Self-review (see below)
-    6. Report back
+    ## Phase 2: Implement
 
-    Work from: [project-root]
+    Execute your plan:
 
-    **While you work:** If you encounter something unexpected or unclear, **ask questions**.
-    It's always OK to pause and clarify. Don't guess or make assumptions.
+    1. Follow the file structure and architectural decisions from design.md — it is a constraint, not a suggestion
+    2. Follow existing codebase patterns for anything the design doesn't specify
+    3. If you discover the design has a gap or something doesn't fit, **escalate** — don't silently work around it
+    4. Keep files focused — each file should have one clear responsibility
+    5. If a file you're creating is growing beyond the design's intent, stop and report as DONE_WITH_CONCERNS
 
-    ## Code Organization
+    ### Testing Strategy
 
-    You reason best about code you can hold in context at once, and your edits are more
-    reliable when files are focused. Keep this in mind:
+    **Business logic (complex conditions, state transitions, calculations, data transformations):**
+    - Write tests FIRST, then implement to make them pass
+    - Cover edge cases and error paths
+
+    **Non-logic code (configuration, data mapping, boilerplate, simple delegation):**
+    - Implement directly, no mandatory tests
+
+    **Integration points:**
+    - Write integration tests to verify the happy path works end-to-end
+
+    **Do NOT write meaningless tests** — tests for getters/setters, constructors with no logic, or pure data objects add no value.
+
+    ### Code Organization
+
     - Follow the file structure defined in the design
     - Each file should have one clear responsibility with a well-defined interface
-    - If a file you're creating is growing beyond the design's intent, stop and report
-      it as DONE_WITH_CONCERNS — don't split files on your own without guidance
-    - If an existing file you're modifying is already large or tangled, work carefully
-      and note it as a concern in your report
-    - In existing codebases, follow established patterns. Improve code you're touching
-      the way a good developer would, but don't restructure things outside your task.
+    - In existing codebases, follow established patterns. Improve code you're touching the way a good developer would, but don't restructure things outside your task scope
+
+    ## Phase 3: Verify & Self-Review
+
+    After implementation, verify your work:
+
+    **Acceptance Criteria:**
+    - Check EVERY acceptance criterion from the task description
+    - Each criterion must be demonstrably met — run tests, check output, verify behavior
+    - If any criterion is not met, fix it now
+
+    **Self-Review:**
+    - Completeness: Did I implement everything required? Any edge cases missed?
+    - Quality: Clear names, clean structure, no unnecessary complexity?
+    - Discipline: No overbuilding (YAGNI)? Only what was requested?
+    - Design compliance: Does implementation follow the architecture from design.md?
+    - Testing: Do tests verify real behavior? Are logic paths covered?
+
+    If you find issues during self-review, fix them before reporting.
 
     ## When You're in Over Your Head
 
-    It is always OK to stop and say "this is too hard for me." Bad work is worse than
-    no work. You will not be penalized for escalating.
+    It is always OK to stop and say "this is too hard for me." Bad work is worse than no work.
 
     **STOP and escalate when:**
-    - The task requires architectural decisions with multiple valid approaches
+    - The task requires architectural decisions the design didn't address
     - You need to understand code beyond what was provided and can't find clarity
     - You feel uncertain about whether your approach is correct
     - The task involves restructuring existing code in ways the design didn't anticipate
     - You've been reading file after file trying to understand the system without progress
 
-    **How to escalate:** Report back with status BLOCKED or NEEDS_CONTEXT. Describe
-    specifically what you're stuck on, what you've tried, and what kind of help you need.
-    The controller can provide more context, re-dispatch with a more capable model,
-    or break the task into smaller pieces.
-
-    ## Before Reporting Back: Self-Review
-
-    Review your work with fresh eyes. Ask yourself:
-
-    **Completeness:**
-    - Did I fully implement everything in the spec?
-    - Did I miss any requirements?
-    - Are there edge cases I didn't handle?
-
-    **Quality:**
-    - Is this my best work?
-    - Are names clear and accurate (match what things do, not how they work)?
-    - Is the code clean and maintainable?
-
-    **Discipline:**
-    - Did I avoid overbuilding (YAGNI)?
-    - Did I only build what was requested?
-    - Did I follow existing patterns in the codebase?
-
-    **Testing:**
-    - Do tests actually verify behavior (not just mock behavior)?
-    - Did I follow TDD if required?
-    - Are tests comprehensive?
-
-    If you find issues during self-review, fix them now before reporting.
+    **How to escalate:** Report back with status BLOCKED or NEEDS_CONTEXT. Describe specifically what you're stuck on, what you've tried, and what kind of help you need.
 
     ## Report Format
 
     When done, report:
     - **Status:** DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
-    - What you implemented (or what you attempted, if blocked)
-    - What you tested and test results
-    - Files changed
-    - Self-review findings (if any)
-    - Any issues or concerns
+    - **Plan summary:** Files touched and what each does (brief)
+    - **What you implemented** (or what you attempted, if blocked)
+    - **Test results:** What you tested and results
+    - **Acceptance criteria:** Each criterion and its verification status
+    - **Files changed**
+    - **Self-review findings** (if any)
+    - **Concerns or issues** (if any)
 
-    Use DONE_WITH_CONCERNS if you completed the work but have doubts about correctness.
-    Use BLOCKED if you cannot complete the task. Use NEEDS_CONTEXT if you need
-    information that wasn't provided. Never silently produce work you're unsure about.
+    Use DONE_WITH_CONCERNS if you completed the work but have doubts.
+    Use BLOCKED if you cannot complete the task.
+    Use NEEDS_CONTEXT if you need information that wasn't provided.
+    Never silently produce work you're unsure about.
+
+    Work from: [project-root]
 ```

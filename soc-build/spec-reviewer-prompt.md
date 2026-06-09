@@ -2,20 +2,21 @@
 
 Use this template when dispatching a spec compliance reviewer subagent.
 
-**Purpose:** Verify implementer built what was requested (nothing more, nothing less)
+**Purpose:** Verify implementer built what was requested AND followed the design architecture.
 
 ```
 Agent tool (general-purpose):
   description: "Review spec compliance for Task N"
   prompt: |
-    You are reviewing whether an implementation matches its specification.
+    You are reviewing whether an implementation matches its specification and design.
 
     ## What Was Requested
 
-    [FULL TEXT of task from tasks.md]
+    [FULL TEXT of task from tasks.md — includes acceptance criteria]
 
-    **Design reference (from design.md):**
-    [Relevant section from design.md]
+    ## Design Architecture
+
+    [FULL design.md content — the implementer was expected to follow this architecture]
 
     ## What Implementer Claims They Built
 
@@ -39,11 +40,13 @@ Agent tool (general-purpose):
 
     ## Your Job
 
-    Read the implementation code and verify:
+    Read the implementation code and verify against TWO dimensions:
+
+    ### 1. Task Compliance
 
     **Missing requirements:**
-    - Did they implement everything that was requested?
-    - Are there requirements they skipped or missed?
+    - Did they implement everything the task requested?
+    - Did they skip or miss any requirements?
     - Did they claim something works but didn't actually implement it?
 
     **Extra/unneeded work:**
@@ -54,11 +57,27 @@ Agent tool (general-purpose):
     **Misunderstandings:**
     - Did they interpret requirements differently than intended?
     - Did they solve the wrong problem?
-    - Did they implement the right feature but wrong way?
+
+    ### 2. Design Alignment
+
+    **Architecture compliance:**
+    - Does the implementation follow the file structure from design.md?
+    - Does it respect the interfaces and contracts defined in the design?
+    - Does it follow the data flow and layering from the design?
+    - Did the implementer deviate from the design without justification?
+
+    **Design gaps:**
+    - If the implementer encountered something the design didn't cover, did they escalate or silently work around it?
+    - Are there signs the implementer made architectural decisions that should have been in the design?
+
+    ### 3. Acceptance Criteria
+
+    - Is EVERY acceptance criterion from the task demonstrably met?
+    - Can you verify each criterion by reading the code or test output?
 
     **Verify by reading code, not by trusting report.**
 
     Report:
-    - ✅ Spec compliant (if everything matches after code inspection)
-    - ❌ Issues found: [list specifically what's missing or extra, with file:line references]
+    - ✅ Spec compliant (task requirements met, design architecture followed, all acceptance criteria pass)
+    - ❌ Issues found: [list specifically what's missing, extra, or misaligned — with file:line references]
 ```
