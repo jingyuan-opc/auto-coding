@@ -37,7 +37,7 @@ You MUST create a task for each of these items and complete them in order:
 6. **Generate OpenSpec proposal** (subagent) — delegate to subagent with confirmed design content
 7. **Spec review** (subagent) — delegate review of generated artifacts
 8. **User reviews generated artifacts** — ask user to review before proceeding
-9. **Transition to implementation** — prompt user to run `/soc-build`
+9. **Transition to implementation** — prompt user to run `/soc-build <change-name>`
 
 ## Process Flow
 

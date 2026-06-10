@@ -14,8 +14,8 @@ Agent tool (general-purpose):
 
     ## Context
 
-    **Change:** <change-name>
-    **Project root:** <project-root>
+    **Spec Change:** <change-name>
+    **Spec Dir:** openspec/changes/<change-name>
 
     **Why (from proposal.md):**
     [proposal.md content]
@@ -60,6 +60,11 @@ Agent tool (general-purpose):
 
     **Non-logic code (configuration, data mapping, boilerplate, simple delegation):**
     - Implement directly, no mandatory tests
+
+    **UI interactions (user-facing features with visual/clickable elements):**
+    - Write Playwright e2e scripts to verify the interaction flow
+    - Cover the happy path and key error/edge scenarios
+    - Tests should simulate real user behavior, not test implementation details
 
     **Integration points:**
     - Write integration tests to verify the happy path works end-to-end

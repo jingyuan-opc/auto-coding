@@ -49,6 +49,7 @@ Agent tool (general-purpose):
     - Do tests verify actual behavior?
     - Are edge cases tested?
     - Test coverage adequate for the change?
+    - For UI interactions: are Playwright e2e scripts present and covering key user flows?
 
     Report:
     - **Strengths:** What's done well
