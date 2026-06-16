@@ -1,84 +1,85 @@
 ---
 name: soc-archive
-description: "Use when an OpenSpec change is complete and ready to be archived. Syncs specs and archives via OpenSpec CLI automatically. Triggered directly by /soc-build after completion."
+description: “当 OpenSpec 变更完成并准备归档时使用。通过 OpenSpec CLI 自动同步规范和归档。由 /soc-build 完成后直接触发。”
 ---
 
-# BSS Archive — Auto Archive Change
+# 自动归档变更
 
-Archive a completed change. Fully automated — no user interaction required.
+归档已完成的变更。完全自动化 — 无需用户交互。
 
-**Input**: Optionally specify a change name after `/soc-archive` (e.g., `/soc-archive add-auth`). If omitted, auto-detect from conversation context. If ambiguous, pick the most recently active change.
+**输入**：可选择在 `/soc-archive` 后指定变更名称（例如 `/soc-archive add-auth`）。如果省略，则从对话上下文中自动检测。如果有歧义，选择最近活跃的变更。
 
-## Steps
+## 步骤
 
-1. **Resolve change name**
+1. **解析变更名称**
 
-   If not provided, auto-detect from conversation context. If called after `/soc-build`, use the same change name. If truly ambiguous, use `openspec list --json` and pick the only active (non-archived) change. If multiple active changes exist, pick the one most recently referenced.
+   如果未提供，则从对话上下文中自动检测。如果在 `/soc-build` 之后调用，使用相同的变更名称。如果确实存在歧义，使用 `openspec list --json` 并选择唯一活跃的（未归档的）变更。如果存在多个活跃变更，选择最近被引用的那个。
 
-2. **Check artifact completion status**
+2. 根据项目执行基本的单元测试和编译/构建等步骤。
 
-   Run `openspec status --change "<name>" --json` to check artifact completion.
+3. **检查产物完成状态**
 
-   Parse the JSON to understand:
-   - `schemaName`: The workflow being used
-   - `planningHome`, `changeRoot`, `artifactPaths`, and `actionContext`: path and scope context
-   - `artifacts`: List of artifacts with their status (`done` or other)
+   运行 `openspec status --change “<name>” --json` 检查产物完成情况。
 
-   If status reports `actionContext.mode: "workspace-planning"`, report error and STOP.
+   解析 JSON 以了解：
+   - `schemaName`：正在使用的工作流
+   - `planningHome`、`changeRoot`、`artifactPaths` 和 `actionContext`：路径和作用域上下文
+   - `artifacts`：产物列表及其状态（`done` 或其他）
 
-   If any artifacts are not `done`: log a warning but proceed without stopping.
+   如果状态报告 `actionContext.mode: “workspace-planning”`，报告错误并停止。
 
-3. **Check task completion status**
+   如果有任何产物不是 `done`：报告错误并停止。
 
-   Read the tasks file (typically `tasks.md`) to check for incomplete tasks.
+4. **检查任务完成状态**
 
-   Count tasks marked with `- [ ]` (incomplete) vs `- [x]` (complete).
+   读取任务文件（通常是 `tasks.md`）以检查未完成的任务。
 
-   If incomplete tasks found: log a warning but proceed without stopping.
+   统计标记为 `- [ ]`（未完成）与 `- [x]`（已完成）的任务数量。
 
-   If no tasks file exists: proceed normally.
+   如果发现未完成的任务：报告错误并停止。
 
-4. **Sync delta specs automatically**
+   如果不存在任务文件：报告错误并停止。
 
-   Use `artifactPaths.specs.existingOutputPaths` from status JSON to check for delta specs.
+5. **自动同步增量规范**
 
-   If delta specs exist, invoke `openspec-sync-specs` via Skill tool to sync them. Proceed to archive regardless of sync outcome.
+   使用状态 JSON 中的 `artifactPaths.specs.existingOutputPaths` 检查增量规范。
 
-   If no delta specs exist, skip sync.
+   如果存在增量规范，通过 Skill 工具调用 `openspec-sync-specs` 进行同步。无论同步结果如何，都继续归档。
 
-5. **Perform the archive**
+   如果不存在增量规范，跳过同步。
 
-   Create an `archive` directory under `planningHome.changesDir` if it doesn't exist:
+6. **执行归档**
+
+   如果 `planningHome.changesDir` 下的 `archive` 目录不存在，则创建它：
    ```bash
-   mkdir -p "<planningHome.changesDir>/archive"
+   mkdir -p “<planningHome.changesDir>/archive”
    ```
 
-   Generate target name using current date: `YYYY-MM-DD-<change-name>`
+   使用当前日期生成目标名称：`YYYY-MM-DD-<change-name>`
 
-   If target already exists: report error with options (rename existing / delete duplicate / retry later) and STOP.
+   如果目标已存在：报告错误并提供选项（重命名现有 / 删除重复项 / 稍后重试）并停止。
 
-   Otherwise:
+   否则：
    ```bash
-   mv "<changeRoot>" "<planningHome.changesDir>/archive/YYYY-MM-DD-<name>"
+   mv “<changeRoot>” “<planningHome.changesDir>/archive/YYYY-MM-DD-<name>”
    ```
 
-6. **Display summary**
+7. **显示摘要**
 
-   Report final result:
+   报告最终结果：
    ```
-   ## Archive Complete
+   ## 归档完成
 
-   **Change:** <change-name>
-   **Schema:** <schema-name>
-   **Archived to:** <archive-path>
-   **Specs:** ✓ Synced (or "No delta specs" or "Sync skipped")
-   **Warnings:** <any warnings, or "None">
+   **变更：** <变更名称>
+   **Schema：** <schema名称>
+   **归档至：** <归档路径>
+   **规范：** ✓ 已同步（或“无增量规范”或“同步已跳过”）
+   **警告：** <任何警告，或“无”>
    ```
 
-## Guardrails
+## 护栏
 
-- Auto-resolve change name from context, no user prompts
-- Proceed on warnings (incomplete artifacts/tasks) without stopping
-- Always sync delta specs if they exist, no confirmation needed
-- Preserve .openspec.yaml when moving to archive
-- Show clear final summary of what happened
+- 从上下文中自动解析变更名称，不提示用户
+- 如果存在增量规范，始终同步，无需确认
+- 移动到归档时保留 .openspec.yaml
+- 显示清晰的最终摘要，说明发生了什么

@@ -21,7 +21,7 @@ Every project goes through this process. A todo list, a single-function utility,
 
 Complex features demand more discussion space. To maximize the conversation depth, delegate all **execution** work to subagents and keep only **dialogue and design** in the main agent's context:
 
-- **Subagent**: Project exploration, OpenSpec artifact generation, spec review
+- **Subagent**: Project exploration, OpenSpec artifact generation, spec review, architect review
 - **Main agent**: Clarifying questions, approach selection, design writing, user interaction
 
 
@@ -35,7 +35,9 @@ You MUST create a task for each of these items and complete them in order:
 4. **Propose 2-3 approaches** — with trade-offs and your recommendation
 5. **Present design** — in sections scaled to their complexity, get user approval after each section
 6. **Generate OpenSpec proposal** (subagent) — delegate to subagent with confirmed design content
-7. **Spec review** (subagent) — delegate review of generated artifacts
+7. **Two-stage review**:
+   - **7a. Spec review** (subagent) — `spec-reviewer-prompt.md`: completeness, consistency, scope, YAGNI, task coverage
+   - **7b. Architect review** (architect subagent) — `architect-reviewer-prompt.md`: architecture soundness, pattern alignment, code-smell risk
 8. **User reviews generated artifacts** — ask user to review before proceeding
 9. **Transition to implementation** — prompt user to run `/soc-build <change-name>`
 
@@ -52,6 +54,7 @@ digraph brainstorming {
     "User approves design?" [shape=diamond];
     "Generate OpenSpec proposal\n(subagent)" [shape=box];
     "Spec review\n(subagent)" [shape=box];
+    "Architect review\n(architect subagent)" [shape=box];
     "User reviews artifacts?" [shape=diamond];
     "Prompt /soc-build" [shape=doublecircle];
 
@@ -65,7 +68,8 @@ digraph brainstorming {
     "User approves design?" -> "Present design sections" [label="no, revise"];
     "User approves design?" -> "Generate OpenSpec proposal\n(subagent)" [label="yes"];
     "Generate OpenSpec proposal\n(subagent)" -> "Spec review\n(subagent)";
-    "Spec review\n(subagent)" -> "User reviews artifacts?";
+    "Spec review\n(subagent)" -> "Architect review\n(architect subagent)";
+    "Architect review\n(architect subagent)" -> "User reviews artifacts?";
     "User reviews artifacts?" -> "Generate OpenSpec proposal\n(subagent)" [label="changes requested"];
     "User reviews artifacts?" -> "Prompt /soc-build" [label="approved"];
 }
@@ -259,55 +263,38 @@ Agent tool (subagent_type: "general-purpose"):
 
 The subagent handles all CLI execution, instruction parsing, and artifact creation. The main agent only receives the final report.
 
-### Step 7: Spec Review (Subagent)
+### Step 7: Two-Stage Review
 
-After artifacts are generated, delegate review to a subagent using the spec-reviewer-prompt template.
+After artifacts are generated, run **two reviews in sequence**. Each catches a different
+class of problem; neither subsumes the other.
 
-**Dispatch:**
-```
-Agent tool (subagent_type: "general-purpose"):
-  description: "Review OpenSpec artifacts for <name>"
-  prompt: |
-    You are reviewing whether a set of OpenSpec artifacts are complete and consistent.
+**Stage 7a — Spec review** (completeness / consistency)
+: Dispatched as `general-purpose` subagent using `./spec-reviewer-prompt.md`.
+: Catches: TODOs, internal contradictions, ambiguous requirements, scope creep,
+  unrequested features, tasks that don't cover the design, weak acceptance criteria.
+: Question it answers: **"Is this ready to be implemented?"**
 
-    **Change:** <name>
-    **Artifacts location:** openspec/changes/<name>/
+**Stage 7b — Architect review** (architecture quality)
+: Dispatched as `architect` subagent using `./architect-reviewer-prompt.md`.
+: Catches: weak boundaries, untied coupling, untested failure modes, missing
+  trade-off rationale, mismatch with project patterns / `CLAUDE.md`, design
+  heading toward code smells, missing migration / rollback / observability story.
+: Question it answers: **"Is this actually a good design?"**
 
-    Read all generated artifacts (proposal.md, specs/, design.md, tasks.md).
+**Order matters:** spec review runs first because if the artifacts aren't even
+complete and self-consistent, architect review wastes tokens on a moving target.
+If 7a finds issues, fix them directly (file edits) and re-run 7a before proceeding
+to 7b. Only move to 7b after 7a is approved.
 
-    ## What to Check
+**How to dispatch 7a:** see `./spec-reviewer-prompt.md` for the full prompt template.
+Fill in `<name>` and dispatch as `subagent_type: "general-purpose"`.
 
-    | Category | What to Look For |
-    |----------|------------------|
-    | Completeness | TODOs, placeholders, "TBD", incomplete sections |
-    | Consistency | Internal contradictions between artifacts, conflicting requirements |
-    | Clarity | Requirements ambiguous enough to cause someone to build the wrong thing |
-    | Scope | Focused enough for a single implementation — not covering multiple independent subsystems |
-    | YAGNI | Unrequested features, over-engineering |
-    | Task coverage | Do tasks.md tasks cover everything in design.md? |
-    | Acceptance criteria | Does each task have specific, testable acceptance criteria? Are criteria measurable and unambiguous? Can each be verified by a concrete action? |
+**How to dispatch 7b:** see `./architect-reviewer-prompt.md` for the full prompt template.
+Fill in `<name>` and dispatch as `subagent_type: "architect"` (the agent defined in
+`agent/architect.md` — uses opus, read-only tools).
 
-    ## Calibration
-
-    **Only flag issues that would cause real problems during implementation.**
-    A missing section, a contradiction, or a requirement so ambiguous it could be
-    interpreted two different ways — those are issues. Minor wording improvements,
-    stylistic preferences, and "sections less detailed than others" are not.
-
-    Approve unless there are serious gaps that would lead to a flawed implementation.
-
-    ## Output Format
-
-    **Status:** Approved | Issues Found
-
-    **Issues (if any):**
-    - [Artifact, Section]: [specific issue] - [why it matters for implementation]
-
-    **Recommendations (advisory, do not block approval):**
-    - [suggestions for improvement]
-```
-
-If the reviewer finds issues, fix them directly (they are just file edits) and move on. Do NOT re-dispatch the reviewer.
+**If either review finds issues, fix them directly** (they are just file edits) and
+re-run the failing review. Do NOT re-dispatch a passing review.
 
 ### Step 8: User Review Gate
 

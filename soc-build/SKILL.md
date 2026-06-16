@@ -1,105 +1,173 @@
 ---
 name: soc-build
-description: "Use when an OpenSpec change has a tasks.md ready for implementation. Dispatches subagent per task with two-stage review, updates task status automatically."
+description: "当一个 OpenSpec 变更的 tasks.md 已准备好进行实现时使用。为每个任务派发子智能体，自动更新任务状态。"
 ---
 
-# SOC Build — Subagent-Driven Implementation
+# SOC Build — 子智能体驱动的实现
 
-Execute OpenSpec tasks by dispatching a fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
+通过为每个任务派发全新的子智能体来执行 OpenSpec 任务。
 
-**Why subagents:** Each subagent gets isolated context with precisely crafted instructions. They never inherit session history — you construct exactly what they need. This preserves your own context for coordination.
+**为什么用子智能体：** 每个子智能体获得隔离的上下文和精确构建的指令。它们从不继承会话历史——你可以精确构建它们所需的内容。这样可以保留你自己的上下文用于协调。
 
-**Core principle:** Fresh subagent per task + self-planning from design context + two-stage review (spec then quality) + acceptance criteria verification = high quality, fast iteration. A task is NOT done until it passes all acceptance criteria defined in tasks.md.
+**核心原则：** 每个任务使用全新子智能体 + 基于设计上下文的自我规划 + 自审 + 验收标准验证 = 高质量、快速迭代。一个任务只有在满足 tasks.md 中定义的所有验收标准后才能算完成。没有独立 reviewer —— 自审是 implementer 自身职责，E2E 阶段兜底跨任务集成问题。
 
-**Self-planning model:** Implementer subagents receive the task description AND full design context (proposal.md + design.md). They plan their own implementation approach — which files to touch, what interfaces to build, what test strategy to use — rather than relying on step-by-step instructions. This keeps soc-spec focused on design and lets each subagent reason about implementation within well-defined architectural constraints.
+**自我规划模型：** 实现者子智能体接收任务标识符（task ID、标题、变更名、项目根、spec 路径、门禁配置），自己从磁盘读 `proposal.md`、`tasks.md`、`design.md` 的相关切片。它们自己规划实现方法——要修改哪些文件、构建什么接口、采用什么测试策略——而不是依赖逐步指令。这样让 soc-spec 专注于设计，让每个子智能体在明确架构约束内自行推理实现方案，同时避免编排器上下文随任务数线性放大。
 
-**Continuous execution:** Do not pause between tasks. Execute all tasks without stopping. The only reasons to stop are: BLOCKED status you cannot resolve, ambiguity that genuinely prevents progress, 3 consecutive task failures, or all tasks complete.
+**持续执行：** 任务之间不要暂停。连续执行所有任务。唯一可以停止的原因是：无法解决的 BLOCKED 状态、真正阻碍进展的歧义、连续 3 个任务失败、或者所有任务完成。
 
-## When to Use
+## 何时使用
 
-When an OpenSpec change exists at `openspec/changes/<name>/` with a `tasks.md` containing incomplete tasks.
+当 `openspec/changes/<name>/` 下存在 OpenSpec 变更，且有包含未完成任务的 `tasks.md` 文件时。
 
-## Trigger
+## 触发方式
 
 ```
-/soc-build              # Auto-detects the active change
-/soc-build <name>       # Specifies which change to build
+/soc-build              # 自动检测当前活动的变更
+/soc-build <name>       # 指定要构建的变更
 ```
 
-## Process
+## 执行流程
 
-1. **Resolve change** — If no name given, auto-detect active change in `openspec/changes/` (excluding `archive/`). If ambiguous, use AskUserQuestion to select.
-2. **Parse tasks.md** — Read `openspec/changes/<name>/tasks.md`, extract incomplete tasks (`[ ]`), sort by ID
-3. **Read context** — Load proposal.md and design.md for subagent context
-4. **For each task:**
-   a. Mark task `🔄 in_progress` in tasks.md
-   b. Spawn Agent (general-purpose) with full design context using `./implementer-prompt.md` template — subagent plans and implements autonomously
-   c. Run spec compliance review (use `./spec-reviewer-prompt.md` template) — verifies both task compliance and design alignment
-   d. If spec review fails → implementer fixes, max 2 retries
-   e. Run code quality review (use `./code-quality-reviewer-prompt.md` template)
-   f. If quality review fails → implementer fixes, max 2 retries
-   g. Verify acceptance criteria — confirm implementation satisfies all acceptance criteria defined in the task. If any criterion is not met → implementer fixes, max 2 retries
-   h. All reviews pass AND acceptance criteria met → mark task `[x] ✅` in tasks.md
-   i. If task fails after retries → mark `❌`
-5. **Handle failures:**
-   - Single task failure: mark ❌, continue to next
-   - 3 consecutive failures: pause entire flow, notify user
-6. **After all tasks** → output summary report, then **directly invoke `/soc-archive`** to archive the change
+1. **确定变更** — 如果没有指定名称，自动检测 `openspec/changes/` 中的活动变更（排除 `archive/`）。如果有歧义，使用 AskUserQuestion 选择。
+2. **解析 tasks.md** — 读取 `openspec/changes/<name>/tasks.md`，提取未完成的任务（`[ ]`），按 ID 排序。对于每个任务，同时提取可选的 `[gates: ...]` 注解作为该任务的**门禁配置**（详见下方任务门禁配置语法）；如果没有，默认为所有检测到的门禁。
+3. **解析 spec 结构** — 记录 spec 目录路径供子智能体使用（不再预先读取 proposal.md / design.md 内容）
+4. **对每个任务执行：**
+   a. 在 tasks.md 中标记任务为 `🔄 in_progress`
+   b. 派发智能体（通用型），传入 task ID + 标题 + spec 路径 + 门禁配置（填入 `./implementer-prompt.md` 模板）——子智能体从磁盘自己读需要的 spec 切片，自主规划和实现
+   c. **验证任务级验收标准** — 子智能体必须确认：
+      - 任务产出的单元测试已编写并通过（**仅 scope 内**的测试：本任务新增/修改的测试 + 覆盖本任务所动模块的已有测试）
+      - 全量测试套件 + 全量覆盖率不在任务级检查，E2E 阶段（步骤 6）和 soc-archive 会跑全量
+   d. 所有验收标准满足 → 在 tasks.md 中标记任务为 `[x] ✅`
+   e. 如果任务在重试后仍然失败 → 标记为 `❌`
+5. **处理失败：**
+   - 单个任务失败：标记 ❌，继续下一个
+   - 连续 2 次失败：暂停整个流程，通知用户
+6. **所有任务完成后 → 跨任务 E2E 回归测试**（仅当变更涉及 UI 时执行；编排器通过 design.md / tasks.md 判断，无 UI 则跳到步骤 7）：
+    前置环境准备：执行所有数据库迁移，重新启动前后端，然后：
+   a. **派发 `e2e-runner` 专用智能体完成端到端测试，prompt：`./e2e-verifier-prompt.md` **
+   b. **如果 E2E 失败**：
+      - 使用 `./implementer-retry-prompt.md` 重新派发被怀疑的任务（回到步骤 4b 的同一条重试路径），传入 E2E 失败上下文作为失败上下文：
+        * 失败的 spec 名称 + file:line
+        * 错误信息 + 末尾 30 行输出
+        * 怀疑的任务 ID（由 e2e-runner 给出）
+        * 推荐的修复方向
+      - 最多重试 1 次
+      - 该任务修复后必须重跑步骤 4c-4e，再回到本步骤重新执行
+   c. 全部通过 → 进入步骤 7
+7. 输出摘要报告，然后**直接调用 `/soc-archive`** 来归档该变更
 
-## Subagent Context
+## 子智能体上下文（路径而非内容）
 
-Each implementer subagent receives:
-- Change name
-- proposal.md content (why we're doing this)
-- design.md content (architecture and constraints — the subagent uses this to plan its approach)
-- Current task description with acceptance criteria (what to implement and when it's done)
-- Project root directory path
+编排器传给子智能体的载荷是**最小化的标识符 + 路径**，不传文件内容。子智能体自己读自己需要的部分。
 
-The subagent is responsible for deriving its own implementation plan (files, interfaces, test strategy) from the design context. The controller does not provide step-by-step instructions.
+**Implementer 子智能体接收：**
 
-## Status Markers in tasks.md
+| 字段 | 值 | 来源 |
+|------|---|------|
+| Task ID | 如 `1.2` | 从 `tasks.md` 中提取 |
+| 任务标题 | 1 行人类可读标题 | 从 `tasks.md` 中抠出对应任务行 |
+| 变更名称 | `<change-name>` | 调用方提供 |
+| 项目根目录 | `[project-root]` | 调用方提供 |
+| Spec 目录 | `openspec/changes/<change-name>/` | 由变更名推导 |
+| 门禁配置 | 来自 `[gates: ...]` 注解,或默认"所有检测到的门禁" | 从 `tasks.md` 任务行提取 |
 
-- `[ ]` — pending
-- `[ ] 🔄 in_progress` — being worked on
-- `[x] ✅` — done
-- `[ ] ❌` — failed
+Implementer 自己从磁盘读：`proposal.md`（全文,通常 <5KB）、`tasks.md`（定位自己、抠出 AC）、`design.md`（仅 `## Task N` section 或 grep 关键字定位的相关切片）。
 
-## Model Selection
+**E2E 子智能体接收：**
 
-Since implementers now self-plan from design context, they need sufficient reasoning capability:
+| 字段 | 值 |
+|------|-----|
+| 变更名称 | `<change-name>` |
+| 项目根目录 | `[project-root]` |
+| Spec 目录 | `openspec/changes/<change-name>/` |
+| 任务完成列表 | 编排器浓缩的 1 行/任务：`Task N — status — files — concerns` |
 
-- **Simple tasks** (clear scope, 1-2 files, well-defined interfaces in design): standard model
-- **Integration tasks** (multi-file, pattern matching, needs to understand existing codebase): capable model
-- **Architecture-adjacent tasks** (touches core abstractions, needs design judgment): most capable model
+E2E 自己从磁盘读 `proposal.md` 和 `design.md` 全文（需要全局架构找跨任务集成点）。
 
-Review subagents always use the most capable available model.
+**为什么不传内容：**
+- 编排器上下文不再随任务数线性放大
+- N 任务不再重复粘贴同一份 design.md N 次
+- 子智能体读的内容始终是磁盘上的最新版本（无粘贴错位风险）
+- 子智能体可以按需多次重读、grep、Read 局部,不必先吞下整份大文件
 
-## Handling Implementer Status
+## tasks.md 中的状态标记
 
-- **DONE:** Proceed to spec compliance review
-- **DONE_WITH_CONCERNS:** Read concerns, proceed if observations only
-- **NEEDS_CONTEXT:** Provide missing context, re-dispatch
-- **BLOCKED:** Assess blocker — provide context, upgrade model, or break task into smaller pieces. Never force the same approach to retry without changes.
+- `[ ]` — 待处理
+- `[ ] 🔄 in_progress` — 正在处理
+- `[x] ✅` — 已完成
+- `[ ] ❌` — 失败
 
-## Failure Handling
+## 任务门禁配置语法
 
-| Scenario | Action |
-|----------|--------|
-| Subagent fails | Retry once, then mark ❌ |
-| Review not passed | Subagent fixes, max 2 retries |
-| 3 consecutive failures | Pause entire flow, notify user |
-| User interrupts | Progress saved in tasks.md, resumable |
+任务可以声明可选的**门禁配置**来跳过不相关的质量门禁并节省构建时间。编排器、实现者和 implementer-retry 子智能体都会遵循此配置。
 
-## Report Format
+**语法（在 `tasks.md` 中任务行的末尾内联）：**
 
-After all tasks, output:
+```markdown
+- [ ] 1.1 添加用户登录 API  [gates: test,lint,type-check]
+- [ ] 1.2 修复 README 错别字  [gates: lint]
+- [ ] 1.3 重构 AuthService  [gates: test,lint,type-check,build]
+- [ ] 1.4 更新 CHANGELOG  [gates: none]
+```
+
+**有效的门禁名称：** `test`、`lint`、`build`、`type-check`
+
+**各门禁的运行范围：**
+
+| 门禁 | 任务级（implementer） | E2E / archive 阶段 |
+|------|---------------------|-------------------|
+| `test` | **Scoped**：本任务新增/修改的测试 + 覆盖本任务所动模块的已有测试 | **Full suite**：整个项目测试集 |
+| `lint` / `type-check` / `build` | 全项目（廉价，捕获跨切问题） | 全项目 |
+
+**解析规则：**
+
+| 注解 | 行为 |
+|------|------|
+| `[gates: test,lint]` | 只运行列出的门禁；跳过其余 |
+| （无注解） | 运行所有检测到的门禁（安全默认） |
+| `[gates: none]` | 跳过所有质量门禁——仅用于无代码变更的文档/错别字任务 |
+| `[gates: type-check]`（门禁未检测到） | 记录警告，跳过该门禁 |
+
+**原因：** 低风险任务（错别字修复、文档更新）不需要运行完整测试套件。高风险任务（重构、schema 迁移）需要每个门禁。规范作者在设计时控制这个权衡。
+
+任务级 `test` 门禁只跑 scope 内测试，全量测试套件由 E2E 阶段（步骤 6）和 soc-archive 负责。
+
+
+## 模型选择
+
+由于实现者现在从设计上下文中进行自我规划，它们需要足够的推理能力：
+
+- **简单任务**（范围明确、1-2 个文件、设计中接口定义清晰）：标准模型
+- **集成任务**（多文件、模式匹配、需要理解现有代码库）：高能力模型
+- **架构相关任务**（触及核心抽象、需要设计判断）：最高能力模型
+
+实现者子智能体**自带** Phase 0（写代码前的实施计划）和 Phase Z（写完后的自审清单），这是它报告 DONE 之前的硬性要求。无需派发独立 reviewer。
+
+## 处理实现者状态
+
+- **DONE：** 推进到下一个任务
+- **DONE_WITH_CONCERNS：** 关注点会传给 E2E 阶段，让 e2e-runner 重点验证。继续推进
+- **NEEDS_CONTEXT：** 提供缺失的上下文，重新派发
+- **BLOCKED：** 评估阻碍——提供上下文、升级模型、或将任务拆分成更小的部分。永远不要在不做任何改变的情况下用同样的方法重试。
+
+## 失败处理
+
+| 场景 | 操作 |
+|------|------|
+| 子智能体失败（gate / 验收标准 / 报告 BLOCKED） | 重试一次（使用 `implementer-retry-prompt.md`），然后标记 ❌ |
+| 连续 2 次失败 | 暂停整个流程，通知用户 |
+| 用户中断 | 进度保存在 tasks.md 中，可恢复 |
+
+## 报告格式
+
+所有任务完成后，输出：
 ```
 SOC Build Complete: <name>
 Total: N tasks | ✅ Passed: X | ❌ Failed: Y
 Tasks:
-  ✅ 1.1 Create theme context
-  ✅ 1.2 Create toggle component
-  ❌ 2.1 Add CSS variables (failed after 3 attempts)
+  ✅ 1.1 创建主题上下文
+  ✅ 1.2 创建切换组件
+  ❌ 2.1 添加 CSS 变量（尝试 3 次后失败）
 ```
 
-Then directly invoke `/soc-archive` to archive the change. Do NOT wait for user instruction.
+然后直接调用 `/soc-archive` 来归档该变更。不要等待用户指令。
