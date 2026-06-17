@@ -1,344 +1,313 @@
 ---
 name: soc-spec
-description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Brainstorms requirements through dialogue then generates an OpenSpec proposal via CLI."
+description: "在任何创意工作前必须使用——创建特性、构建组件、添加功能或修改行为。通过对话头脑风暴需求，然后通过 CLI 生成 OpenSpec proposal。"
 ---
 
-# Brainstorming Ideas Into OpenSpec Proposals
+# 把 idea 头脑风暴成 OpenSpec proposal
 
-Help turn ideas into fully formed designs through natural collaborative dialogue, then generate all OpenSpec artifacts via CLI.
+通过自然的协作对话帮助把 idea 变成完整设计，然后通过 CLI 生成所有 OpenSpec 工件。
 
-Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design and get user approval. After approval, generate the OpenSpec proposal.
+先理解当前项目上下文，然后一次一个问题地细化 idea。理解清楚要构建什么之后，呈现设计并获得用户批准。批准后生成 OpenSpec
+proposal。
 
 <HARD-GATE>
-Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and the user has approved it AND all OpenSpec artifacts are generated. This applies to EVERY project regardless of perceived simplicity.
+在你呈现设计并获得用户批准**且**所有 OpenSpec 工件都已生成之前，**不要**调用任何实现 skill、写任何代码、scaffold 任何项目，或采取任何实现动作。这适用于**每个**项目，无论看起来多简单。
 </HARD-GATE>
 
-## Anti-Pattern: "This Is Too Simple To Need A Design"
+## 反模式："这太简单了不需要设计"
 
-Every project goes through this process. A todo list, a single-function utility, a config change — all of them. "Simple" projects are where unexamined assumptions cause the most wasted work. The design can be short (a few sentences for truly simple projects), but you MUST present it and get approval.
+每个项目都走这个流程。一个 todo list、一个单函数工具、一个 config 改动——全都包括。"简单"
+的项目恰恰是未经审视的假设造成最多返工的地方。设计可以很短（对真正简单的项目就几句话），但你**必须**呈现设计并获得批准。
 
-## Context Window Strategy
+## 上下文窗口策略
 
-Complex features demand more discussion space. To maximize the conversation depth, delegate all **execution** work to subagents and keep only **dialogue and design** in the main agent's context:
+复杂特性需要更多讨论空间。为了最大化对话深度，把所有**执行**工作委托给子智能体，只把**对话与设计**保留在主智能体的上下文中：
 
-- **Subagent**: Project exploration, OpenSpec artifact generation, spec review, architect review
-- **Main agent**: Clarifying questions, approach selection, design writing, user interaction
-
+- **子智能体**：项目探索、spec review、architect review
+- **主智能体**：澄清问题、方案选择、设计撰写、用户交互
 
 ## Checklist
 
-You MUST create a task for each of these items and complete them in order:
+你**必须**为以下每一项创建任务并按顺序完成：
 
-1. **Explore project context** (subagent) — delegate to Explore subagent, get structured summary
-2. **Offer visual companion** (if topic will involve visual questions) — this is its own message, not combined with a clarifying question. See the Visual Companion section below.
-3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
-4. **Propose 2-3 approaches** — with trade-offs and your recommendation
-5. **Present design** — in sections scaled to their complexity, get user approval after each section
-6. **Generate OpenSpec proposal** (subagent) — delegate to subagent with confirmed design content
-7. **Two-stage review**:
-   - **7a. Spec review** (subagent) — `spec-reviewer-prompt.md`: completeness, consistency, scope, YAGNI, task coverage
-   - **7b. Architect review** (architect subagent) — `architect-reviewer-prompt.md`: architecture soundness, pattern alignment, code-smell risk
-8. **User reviews generated artifacts** — ask user to review before proceeding
-9. **Transition to implementation** — prompt user to run `/soc-build <change-name>`
+1. **探索项目上下文**（子智能体）—— 委托给 Explore 子智能体，获取结构化摘要
+2. **提供 Visual Companion**（如果话题将涉及视觉问题）—— 这是独立的一条消息，不与澄清问题合并。详见下文 Visual Companion 段。
+3. **提出澄清问题**—— 一次一个，理解目的/约束/成功标准
+4. **提出 2-3 个方案**—— 含 trade-off 和你的推荐
+5. **呈现设计**—— 按章节切分，复杂度匹配，尽可能使用图形化方式呈现关键设计与流程。每节后获得用户批准
+6. **生成 OpenSpec proposal**
+7. **两阶段 review**：
+    - **7a. Spec review**（子智能体）—— `spec-reviewer-prompt.md`：完整性、一致性、范围、YAGNI、任务覆盖度
+    - **7b. Architect review**（architect 子智能体）—— `architect-reviewer-prompt.md`：架构合理性、模式对齐、代码味道风险
+8. **用户审查生成的工件**—— 请用户在继续前审查
+9. **过渡到实现**—— 提示用户运行 `/soc-build <change-name>`
 
-## Process Flow
+## 流程图
 
 ```dot
 digraph brainstorming {
-    "Explore project context\n(subagent)" [shape=box];
-    "Visual questions ahead?" [shape=diamond];
-    "Offer Visual Companion\n(own message)" [shape=box];
-    "Ask clarifying questions" [shape=box];
-    "Propose 2-3 approaches" [shape=box];
-    "Present design sections" [shape=box];
-    "User approves design?" [shape=diamond];
-    "Generate OpenSpec proposal\n(subagent)" [shape=box];
-    "Spec review\n(subagent)" [shape=box];
-    "Architect review\n(architect subagent)" [shape=box];
-    "User reviews artifacts?" [shape=diamond];
-    "Prompt /soc-build" [shape=doublecircle];
+    "探索项目上下文\n(子智能体)" [shape=box];
+    "接下来有视觉问题?" [shape=diamond];
+    "提供 Visual Companion\n(独立消息)" [shape=box];
+    "提出澄清问题" [shape=box];
+    "提出 2-3 个方案" [shape=box];
+    "呈现设计章节" [shape=box];
+    "用户批准设计?" [shape=diamond];
+    "生成 OpenSpec proposal" [shape=box];
+    "Spec review\n(子智能体)" [shape=box];
+    "Architect review\n(architect 子智能体)" [shape=box];
+    "用户审查工件?" [shape=diamond];
+    "提示 /soc-build" [shape=doublecircle];
 
-    "Explore project context\n(subagent)" -> "Visual questions ahead?";
-    "Visual questions ahead?" -> "Offer Visual Companion\n(own message)" [label="yes"];
-    "Visual questions ahead?" -> "Ask clarifying questions" [label="no"];
-    "Offer Visual Companion\n(own message)" -> "Ask clarifying questions";
-    "Ask clarifying questions" -> "Propose 2-3 approaches";
-    "Propose 2-3 approaches" -> "Present design sections";
-    "Present design sections" -> "User approves design?";
-    "User approves design?" -> "Present design sections" [label="no, revise"];
-    "User approves design?" -> "Generate OpenSpec proposal\n(subagent)" [label="yes"];
-    "Generate OpenSpec proposal\n(subagent)" -> "Spec review\n(subagent)";
-    "Spec review\n(subagent)" -> "Architect review\n(architect subagent)";
-    "Architect review\n(architect subagent)" -> "User reviews artifacts?";
-    "User reviews artifacts?" -> "Generate OpenSpec proposal\n(subagent)" [label="changes requested"];
-    "User reviews artifacts?" -> "Prompt /soc-build" [label="approved"];
+    "探索项目上下文\n(子智能体)" -> "接下来有视觉问题?";
+    "接下来有视觉问题?" -> "提供 Visual Companion\n(独立消息)" [label="是"];
+    "接下来有视觉问题?" -> "提出澄清问题" [label="否"];
+    "提供 Visual Companion\n(独立消息)" -> "提出澄清问题";
+    "提出澄清问题" -> "提出 2-3 个方案";
+    "提出 2-3 个方案" -> "呈现设计章节";
+    "呈现设计章节" -> "用户批准设计?";
+    "用户批准设计?" -> "呈现设计章节" [label="否，修改"];
+    "用户批准设计?" -> "生成 OpenSpec proposal" [label="是"];
+    "生成 OpenSpec proposal" -> "Spec review\n(子智能体)";
+    "Spec review\n(子智能体)" -> "Architect review\n(architect 子智能体)";
+    "Architect review\n(architect 子智能体)" -> "用户审查工件?";
+    "用户审查工件?" -> "生成 OpenSpec proposal" [label="要求修改"];
+    "用户审查工件?" -> "提示 /soc-build" [label="批准"];
 }
 ```
 
-**The terminal state is prompting the user to run `/soc-build`.** Do NOT invoke bss:build, frontend-design, or any other implementation skill directly. The user decides when to start building.
+**终态是提示用户运行 `/soc-build`。**不要直接调用 /soc-build或任何其他实现 skill。由用户决定何时开始构建。
 
-## The Process
+## 流程详解
 
-### Step 1: Explore Project Context (Subagent)
+### Step 1: 探索项目上下文（子智能体）
 
-Delegate project exploration to a subagent to avoid loading raw file content into the main context.
+把项目探索委托给子智能体，避免把原始文件内容加载进主上下文。
 
-**Dispatch:**
+**派发指令：**
+
 ```
 Agent tool (subagent_type: "Explore"):
-  description: "Explore project context"
+  description: "探索项目上下文"
   prompt: |
-    Explore the current project to understand its context for a new feature.
-    Return a structured summary covering:
+    探索当前项目，理解其为新特性的上下文。
+    返回结构化摘要，覆盖：
 
-    1. **Tech stack**: languages, frameworks, key dependencies
-    2. **Directory structure**: top-level layout and relevant subdirectories
-    3. **Related files**: files most likely relevant to "<user's request>"
-    4. **Recent changes**: last 5-10 commits summary
-    5. **Existing patterns**: code conventions, testing patterns, config patterns
-    6. **Constraints**: any obvious constraints from the codebase (e.g., "no database, file-based storage")
+    1. **Tech stack**：语言、框架、关键依赖
+    2. **目录结构**：顶层布局和相关子目录
+    3. **相关文件**：最可能与 "<user's request>" 相关的文件
+    4. **最近变更**：最近 5-10 个 commit 摘要
+    5. **已有模式**：代码约定、测试模式、配置模式
+    6. **约束**：从代码库能看出的明显约束（如"无数据库，基于文件的存储"）
 
-    User's request: "<user's request>"
-    Project root: <project-root>
+    用户请求："<user's request>"
+    项目根：<project-root>
 
-    Be thorough but concise. The summary will be used for brainstorming — include
-    anything that would inform design decisions. Omit anything not relevant to the request.
+    要彻底但简练。摘要将用于头脑风暴——包含任何会影响设计决策的内容。omit 任何与请求无关的内容。
 
-    Report in under 500 words.
+    500 字内汇报。
 ```
 
-Use the summary to inform your questions. If you need deeper detail on a specific area later, dispatch a focused follow-up exploration.
+用这个摘要来指导你的提问。如果后续需要对某个领域深入细节，再派发一次聚焦的 follow-up 探索。
 
-### Step 2: Visual Companion (Conditional)
+### Step 2: Visual Companion（条件性）
 
-If the topic will involve visual questions (UI, layout, diagrams), offer the visual companion. See the Visual Companion section below.
+如果话题将涉及视觉问题（UI、布局、图），提供 Visual Companion。详见下文 Visual Companion 段。
 
-### Step 3-5: Dialogue and Design (Main Agent)
+### Step 3-5: 对话与设计（主智能体）
 
-**Understanding the idea:**
+**理解 idea：**
 
-- Use the exploration summary to understand the project landscape
-- Before asking detailed questions, assess scope: if the request describes multiple independent subsystems (e.g., "build a platform with chat, file storage, billing, and analytics"), flag this immediately. Don't spend questions refining details of a project that needs to be decomposed first.
-- If the project is too large for a single spec, help the user decompose into sub-projects: what are the independent pieces, how do they relate, what order should they be built? Then brainstorm the first sub-project through the normal design flow. Each sub-project gets its own spec → build → archive cycle.
-- For appropriately-scoped projects, ask questions one at a time to refine the idea
-- Prefer multiple choice questions when possible, but open-ended is fine too
-- Only one question per message - if a topic needs more exploration, break it into multiple questions
-- Focus on understanding: purpose, constraints, success criteria
+- 用探索摘要理解项目全貌
+- 在问详细问题前，先评估范围：如果请求描述了多个独立子系统（如"构建一个平台，含 chat、文件存储、计费、分析"
+  ），立即指出。不要花问题去细化一个需要先分解的项目的细节。
+- 如果项目对单个 spec 来说太大，帮用户分解成子项目：独立的子部分是什么？它们如何关联？应该按什么顺序构建？然后通过正常的设计流程头脑风暴第一个子项目。每个子项目有自己独立的
+  spec → build → archive 循环。
+- 对范围合适的项目，**一次问一个**问题来细化 idea
+- 尽可能优先用多选题，但开放性问题也可以
+- 每条消息只问一个问题——如果一个话题需要更多探索，拆成多个问题
+- 聚焦于理解：目的、约束、成功标准
 
-**Exploring approaches:**
+**探索方案：**
 
-- Propose 2-3 different approaches with trade-offs
-- Present options conversationally with your recommendation and reasoning
-- Lead with your recommended option and explain why
+- 提出 2-3 个不同方案，含 trade-off
+- 用对话方式呈现选项，附你的推荐和理由
+- 以你推荐的方案开头，解释为什么
 
-**Defining acceptance criteria:**
+**定义 acceptance criteria：**
 
-- Every design MUST include a clear, verifiable **Acceptance Criteria** section
-- Acceptance criteria define the **final verification checklist** that the completed implementation must pass — they are the definition of "done"
-- Criteria must be:
-  - **Specific**: no ambiguous terms like "works well" or "good performance" — use exact thresholds where possible
-  - **Testable**: each criterion can be verified by a concrete action (run a test, inspect output, check a metric)
-  - **Complete**: covering functional correctness, edge cases, error handling, and integration points
-- Present acceptance criteria as a numbered checklist, each item starting with a measurable assertion (e.g., "API returns 200 with valid payload for all valid inputs", "Error response contains actionable message for invalid input")
-- If the user cannot define acceptance criteria for a feature, the feature's requirements are not yet clear enough — ask more questions
+- 每个设计都**必须**包含清晰、可验证的 **Acceptance Criteria** 段
+- Acceptance criteria 定义完成实现后必须通过的**最终验证 checklist**——它们是"完成"的定义
+- Criteria 必须是：
+    - **Specific**：不要用"works well"或"good performance"这类模糊词——尽可能用精确阈值
+    - **Testable**：每条 criterion 都能通过具体动作验证（跑测试、检查输出、看指标）
+    - **Complete**：覆盖功能正确性、边界情况、错误处理、集成点
+- Acceptance criteria 以编号 checklist 形式呈现，每项以可测量的断言开头（如"API 对所有合法输入返回 200"、"
+  错误响应含对非法输入的可操作提示"）
+- 如果用户无法为某个特性定义 acceptance criteria，这个特性的需求还不够清晰——继续问问题
 
-**Presenting the design:**
+**呈现设计：**
 
-- Once you believe you understand what you're building, present the design
-- Scale each section to its complexity: a few sentences if straightforward, up to 200-300 words if nuanced
-- Ask after each section whether it looks right so far
-- Cover: architecture, components, data flow, error handling, testing, **acceptance criteria**
-- Be ready to go back and clarify if something doesn't make sense
+- 一旦你相信自己理解了要构建什么，呈现设计
+- 按章节复杂度匹配内容长度：直白的内容几句话即可，复杂的内容最多 200-300 字，尽可能使用图形化方式呈现架构设计、业务流程、数据流向等
+- 每节后问一下"目前看起来对吗"
+- 覆盖：架构、组件、数据流、错误处理、测试、**acceptance criteria**
+- 准备好回头澄清不合理的地方
 
-**Design for isolation and clarity:**
+**为隔离和清晰而设计：**
 
-- Break the system into smaller units that each have one clear purpose, communicate through well-defined interfaces, and can be understood and tested independently
-- For each unit, you should be able to answer: what does it do, how do you use it, and what does it depend on?
-- Can someone understand what a unit does without reading its internals? Can you change the internals without breaking consumers? If not, the boundaries need work.
-- Smaller, well-bounded units are also easier for you to work with - you reason better about code you can hold in context at once, and your edits are more reliable when files are focused. When a file grows large, that's often a signal that it's doing too much.
+- 把系统拆成更小的单元，每个单元有单一明确目的，通过良好定义的接口通信，能独立理解和测试
+- 对每个单元，你应该能回答：它做什么、怎么用、依赖什么？
+- 别人能不理解它的内部就读懂一个单元吗？你能改内部而不破坏消费者吗？如果不能，边界需要打磨。
+- 更小、边界清晰的单元也更容易让你工作——你能更好地推理可以一次放进上下文的代码，文件聚焦时你的编辑也更可靠。一个文件变大时，往往就是它在做太多事情的信号。
 
-**Working in existing codebases:**
+**在现有代码库中工作：**
 
-- Use the exploration summary to understand existing patterns before proposing changes
-- Where existing code has problems that affect the work (e.g., a file that's grown too large, unclear boundaries, tangled responsibilities), include targeted improvements as part of the design - the way a good developer improves code they're working in.
-- Don't propose unrelated refactoring. Stay focused on what serves the current goal.
+- 用探索摘要在提出改动前理解现有模式
+- 当现有代码有问题且影响当前工作（如文件变得太大、边界不清、责任纠缠），把针对性改进作为设计的一部分——就像一个好的开发者在改善他正在工作的代码一样。
+- 不要提出无关的重构。聚焦于服务当前目标的内容。
 
-### Step 6: Generate OpenSpec Proposal (Subagent)
+### Step 6: 生成 OpenSpec proposal
 
-After the user confirms the design, delegate the entire OpenSpec CLI workflow to a subagent.
+用户确认设计后，从讨论中推导一个 kebab-case 名字（如"add user authentication" → `add-user-auth`）。开始生产openspec change。
 
-**Input**: Derive a kebab-case name from the discussion (e.g., "add user authentication" → `add-user-auth`).
+#### 步骤
 
-**Dispatch:**
-```
-Agent tool (subagent_type: "general-purpose"):
-  description: "Generate OpenSpec proposal: <name>"
-  prompt: |
-    You are generating an OpenSpec change proposal. Follow the exact CLI workflow below.
-
-    ## Change Name
-
-    <name>
-
-    ## Design Content
-
-    The user has confirmed the following design. Use this as the content basis for all artifacts:
-
-    <paste the full confirmed design from the brainstorming conversation>
-
-    ## Project Context
-
-    <paste the exploration summary from Step 1>
-
-    ## Steps
-
-    1. **Create the change directory**
+    1. **创建 change 目录**
        ```bash
        openspec new change "<name>"
        ```
 
-    2. **Get the artifact build order**
+    2. **获取工件构建顺序**
        ```bash
        openspec status --change "<name>" --json
        ```
-       Parse the JSON to get:
-       - `applyRequires`: array of artifact IDs needed before implementation
-       - `artifacts`: list of all artifacts with their status and dependencies
-       - `planningHome`, `changeRoot`, `artifactPaths`, and `actionContext`: path and scope context
+       解析 JSON 获取：
+       - `applyRequires`：实现前需要的工件 ID 数组
+       - `artifacts`：所有工件列表，含状态和依赖
+       - `planningHome`、`changeRoot`、`artifactPaths` 和 `actionContext`：路径和作用域上下文
 
-    3. **Create artifacts in sequence until apply-ready**
+    3. **按顺序创建工件直到 apply-ready**
 
-       Use the TodoWrite tool to track progress through the artifacts.
+       用 TodoWrite 工具跟踪工件进度。
 
-       Loop through artifacts in dependency order (artifacts with no pending dependencies first):
+       按依赖顺序循环（先处理无 pending 依赖的工件）：
 
-       a. **For each artifact that is `ready` (dependencies satisfied)**:
-          - Get instructions:
+       a. **对每个 `ready`（依赖满足）的工件**：
+          - 获取指令：
             ```bash
             openspec instructions <artifact-id> --change "<name>" --json
             ```
-          - The instructions JSON includes:
-            - `context`: Project background (constraints for you - do NOT include in output)
-            - `rules`: Artifact-specific rules (constraints for you - do NOT include in output)
-            - `template`: The structure to use for your output file
-            - `instruction`: Schema-specific guidance for this artifact type
-            - `resolvedOutputPath`: Resolved path or pattern to write the artifact
-            - `dependencies`: Completed artifacts to read for context
-          - Read any completed dependency files for context
-          - Create the artifact file using `template` as the structure and write it to `resolvedOutputPath`
-          - Use the design content above as the content basis
-          - Apply `context` and `rules` as constraints - but do NOT copy them into the file
-          - Show brief progress: "Created <artifact-id>"
+          - 指令 JSON 包含：
+            - `context`：项目背景（对你的约束——**不要**放进输出）
+            - `rules`：工件特定的规则（对你的约束——**不要**放进输出）
+            - `template`：输出文件使用的结构
+            - `instruction`：对此工件类型的 schema-specific 指导
+            - `resolvedOutputPath`：解析过的输出路径或模式
+            - `dependencies`：为上下文而读的已完成工件
+          - 读任何已完成的依赖文件作为上下文
+          - 用 `template` 作为结构创建工件文件，写入 `resolvedOutputPath`
+          - 以上面的设计内容作为内容基础
+          - 把 `context` 和 `rules` 作为约束应用——但**不要**把它们复制进文件
+          - 简短显示进度："Created <artifact-id>"
 
-       b. **Continue until all `applyRequires` artifacts are complete**
-          - After creating each artifact, re-run `openspec status --change "<name>" --json`
-          - Check if every artifact ID in `applyRequires` has `status: "done"` in the artifacts array
-          - Stop when all `applyRequires` artifacts are done
+       b. **继续直到所有 `applyRequires` 工件完成**
+          - 创建每个工件后，重跑 `openspec status --change "<name>" --json`
+          - 检查 `applyRequires` 中的每个工件 ID 是否在 artifacts 数组中状态为 `status: "done"`
+          - 全部 done 后停止
 
-    4. **Show final status**
+    4. **显示最终状态**
        ```bash
        openspec status --change "<name>"
        ```
 
-    ## Artifact Creation Guidelines
+#### 工件创建指南
 
-    - Follow the `instruction` field from `openspec instructions` for each artifact type
-    - The schema defines what each artifact should contain - follow it
-    - Read dependency artifacts for context before creating new ones
-    - Use `template` as the structure for your output file - fill in its sections
-    - **IMPORTANT**: `context` and `rules` are constraints for YOU, not content for the file
-      - Do NOT copy `<context>`, `<rules>`, `<project_context>` blocks into the artifact
-      - These guide what you write, but should never appear in the output
-    - **Acceptance Criteria**: Ensure the acceptance criteria from the confirmed design are reflected in the appropriate artifacts (design.md, tasks.md). Each task in tasks.md MUST have clear, testable acceptance criteria that implementation must satisfy before being considered complete
+    - 对每个工件类型，遵循 `openspec instructions` 的 `instruction` 字段
+    - schema 定义了每个工件应包含什么——遵循它
+    - 创建新工件前读依赖工件作为上下文
+    - 用 `template` 作为输出文件结构——填充它的章节
+    - **重要**：`context` 和 `rules` 是对你的约束，**不是**文件的内容
+      - **不要**把 `<context>`、`<rules>`、`<project_context>` 块复制进工件
+      - 它们指导你写什么，但**永远不应**出现在输出中
+    - **Acceptance Criteria**：确保确认设计中的 acceptance criteria 反映在合适的工件中（design.md、tasks.md）。tasks.md 中**每个任务**都必须有清晰、可测试的 acceptance criteria，实现必须在被认为完成前满足
 
-    ## Report Format
 
-    When done, report:
-    - Change name and location
-    - List of artifacts created with brief descriptions
-    - Final status output from `openspec status`
 
-    If any step fails, report the error and what you attempted.
-```
+### Step 7: 两阶段 review
 
-The subagent handles all CLI execution, instruction parsing, and artifact creation. The main agent only receives the final report.
+工件生成后，**按顺序跑两个 review**。每个抓不同类问题；任何一个都不能覆盖另一个。
 
-### Step 7: Two-Stage Review
+**Stage 7a — Spec review**（完整性 / 一致性）
+: 以 `general-purpose` 子智能体派发，使用 `./spec-reviewer-prompt.md`。
+: 抓：TODO、内部矛盾、模糊需求、范围蔓延、未要求的特性、不覆盖 design 的任务、弱 acceptance criteria。
+: 它回答的问题：**"这个能进入实现阶段吗？"**
 
-After artifacts are generated, run **two reviews in sequence**. Each catches a different
-class of problem; neither subsumes the other.
+**Stage 7b — Architect review**（架构质量）
+: 以 `architect` 子智能体派发，使用 `./architect-reviewer-prompt.md`。
+: 抓：弱边界、未绑的耦合、未测的失败模式、缺失的 trade-off 理由、与项目模式 / `CLAUDE.md` 不匹配、设计走向代码味道、缺失的
+migration / rollback / observability 故事。
+: 它回答的问题：**"这真的是个好设计吗？"**
 
-**Stage 7a — Spec review** (completeness / consistency)
-: Dispatched as `general-purpose` subagent using `./spec-reviewer-prompt.md`.
-: Catches: TODOs, internal contradictions, ambiguous requirements, scope creep,
-  unrequested features, tasks that don't cover the design, weak acceptance criteria.
-: Question it answers: **"Is this ready to be implemented?"**
+**顺序很重要：** spec review 先跑，因为如果工件都不完整、自洽不了，architect review 就在移动目标上浪费 token。如果 7a
+发现问题，直接修复（文件编辑）并重跑 7a 再进入 7b。7a 通过后才进入 7b。
 
-**Stage 7b — Architect review** (architecture quality)
-: Dispatched as `architect` subagent using `./architect-reviewer-prompt.md`.
-: Catches: weak boundaries, untied coupling, untested failure modes, missing
-  trade-off rationale, mismatch with project patterns / `CLAUDE.md`, design
-  heading toward code smells, missing migration / rollback / observability story.
-: Question it answers: **"Is this actually a good design?"**
+**如何派发 7a：** 见 `./spec-reviewer-prompt.md` 完整 prompt 模板。
+填入 `<name>`，作为 `subagent_type: "general-purpose"` 派发。
 
-**Order matters:** spec review runs first because if the artifacts aren't even
-complete and self-consistent, architect review wastes tokens on a moving target.
-If 7a finds issues, fix them directly (file edits) and re-run 7a before proceeding
-to 7b. Only move to 7b after 7a is approved.
+**如何派发 7b：** 见 `./architect-reviewer-prompt.md` 完整 prompt 模板。
+填入 `<name>`，作为 `subagent_type: "architect"` 派发（即
+`agent/architect.md` 中定义的 agent——使用 opus、只读工具）。
 
-**How to dispatch 7a:** see `./spec-reviewer-prompt.md` for the full prompt template.
-Fill in `<name>` and dispatch as `subagent_type: "general-purpose"`.
+**如果任一 review 发现问题，直接修复**（就是文件编辑）并重跑失败的 review。**不要**重派已通过的 review。
 
-**How to dispatch 7b:** see `./architect-reviewer-prompt.md` for the full prompt template.
-Fill in `<name>` and dispatch as `subagent_type: "architect"` (the agent defined in
-`agent/architect.md` — uses opus, read-only tools).
+### Step 8: 用户审查 gate
 
-**If either review finds issues, fix them directly** (they are just file edits) and
-re-run the failing review. Do NOT re-dispatch a passing review.
+请用户在继续前审查生成的工件：
 
-### Step 8: User Review Gate
+> "OpenSpec proposal 已生成于 `openspec/changes/<name>/`。请审查工件，告诉我是否要在开始实现前做任何改动。"
 
-Ask the user to review the generated artifacts before proceeding:
+等用户回复。如果他们要求改动，直接做。只有在用户批准后才继续。
 
-> "OpenSpec proposal generated at `openspec/changes/<name>/`. Please review the artifacts and let me know if you want to make any changes before we start implementation."
+### Step 9: 过渡到实现
 
-Wait for the user's response. If they request changes, make them directly. Only proceed once the user approves.
+用户批准后，输出：
 
-### Step 9: Transition to Implementation
+- Change 名称和位置
+- 创建的工件列表，含简短描述
+- "所有工件已创建！可以开始实现。"
+- "运行 `/soc-build` 开始实现。"
 
-After user approval, output:
+**不要**直接调用 `/soc-build`。由用户决定何时开始构建。
 
-- Change name and location
-- List of artifacts created with brief descriptions
-- "All artifacts created! Ready for implementation."
-- "Run `/soc-build` to start implementation."
+## 关键原则
 
-Do NOT invoke `/soc-build` directly. The user decides when to start building.
-
-## Key Principles
-
-- **One question at a time** - Don't overwhelm with multiple questions
-- **Multiple choice preferred** - Easier to answer than open-ended when possible
-- **YAGNI ruthlessly** - Remove unnecessary features from all designs
-- **Explore alternatives** - Always propose 2-3 approaches before settling
-- **Incremental validation** - Present design, get approval before moving on
-- **Be flexible** - Go back and clarify when something doesn't make sense
+- **一次一个问题** —— 不要用多个问题淹没对方
+- **优先多选题** —— 比开放性问题更容易回答
+- **YAGNI 无情** —— 从所有设计中移除不必要的特性
+- **探索替代方案** —— 在定下来前总是提出 2-3 个方案
+- **增量验证** —— 呈现设计，获得批准后再继续
+- **灵活** —— 当某些东西不合理时回头澄清
 
 ## Visual Companion
 
-A browser-based companion for showing mockups, diagrams, and visual options during brainstorming. Available as a tool — not a mode. Accepting the companion means it's available for questions that benefit from visual treatment; it does NOT mean every question goes through the browser.
+浏览器中的伙伴，用于在头脑风暴时展示 mockup、图表和视觉选项。作为工具提供——不是模式。接受 companion 意味着它在适合视觉处理的问题中可用；这
+**并不**意味着每个问题都走浏览器。
 
-**Offering the companion:** When you anticipate that upcoming questions will involve visual content (mockups, layouts, diagrams), offer it once for consent:
-> "Some of what we're working on might be easier to explain if I can show it to you in a web browser. I can put together mockups, diagrams, comparisons, and other visuals as we go. This feature is still new and can be token-intensive. Want to try it? (Requires opening a local URL)"
+**提供 companion：** 当你预期接下来的问题涉及视觉内容（mockup、布局、图表）时，提供一次以征得同意：
+> "我们正在做的一些事可能用浏览器展示给你看会更清楚。我可以放一些 mockup、图表、对比以及其他视觉内容。这个功能还比较新，可能比较耗
+> token。要试一下吗？（需要打开本地 URL）"
 
-**This offer MUST be its own message.** Do not combine it with clarifying questions, context summaries, or any other content. The message should contain ONLY the offer above and nothing else. Wait for the user's response before continuing. If they decline, proceed with text-only brainstorming.
+**这个 offer 必须是独立的一条消息。** 不要把它和澄清问题、上下文摘要或任何其他内容合并。消息应该**只**包含上面的
+offer，没有别的。等用户回复再继续。如果他们拒绝，就用纯文本头脑风暴继续。
 
-**Per-question decision:** Even after the user accepts, decide FOR EACH QUESTION whether to use the browser or the terminal. The test: **would the user understand this better by seeing it than reading it?**
+**逐问题决定：** 即使用户接受了，也要**对每个问题**决定用浏览器还是终端。判断标准：**用户看到它比读它更好理解吗？**
 
-- **Use the browser** for content that IS visual — mockups, wireframes, layout comparisons, architecture diagrams, side-by-side visual designs
-- **Use the terminal** for content that is text — requirements questions, conceptual choices, tradeoff lists, A/B/C/D text options, scope decisions
+- **用浏览器**当内容**是**视觉的——mockup、wireframe、布局对比、架构图、并排视觉设计
+- **用终端**当内容是文本——需求问题、概念选择、tradeoff 清单、A/B/C/D 文本选项、范围决策
 
-A question about a UI topic is not automatically a visual question. "What does personality mean in this context?" is a conceptual question — use the terminal. "Which wizard layout works better?" is a visual question — use the browser.
+UI 话题的问题不自动是视觉问题。"在这个上下文中 personality 是什么意思？"是概念问题——用终端。"哪种 wizard 布局更好？"
+是视觉问题——用浏览器。
 
-If they agree to the companion, read the detailed guide before proceeding:
+如果他们同意 companion，先读详细指南再继续：
 `visual-companion.md`
