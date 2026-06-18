@@ -161,6 +161,16 @@ Agent tool (subagent_type: "Explore"):
 - 别人能不理解它的内部就读懂一个单元吗？你能改内部而不破坏消费者吗？如果不能，边界需要打磨。
 - 更小、边界清晰的单元也更容易让你工作——你能更好地推理可以一次放进上下文的代码，文件聚焦时你的编辑也更可靠。一个文件变大时，往往就是它在做太多事情的信号。
 
+**任务切片：为 `/soc-build` 子智能体自足而设计：**
+
+`/soc-build` 把每个任务派发为**独立子智能体**——它只读 `proposal.md`（全文）、`tasks.md`（定位自己）、`design.md`（仅相关切片），不继承会话历史。任务的切法直接决定子智能体能否一次过：
+
+- **每个任务必须是自足的一组紧密关联的工作单元**：一个子智能体在不读全量 design 的前提下能规划完。如果一个任务跨多个不相关模块，拆开。
+- **design.md 按 `## Task N.M` 分章节**：每个任务章节包含「目标 / 涉及文件 / 接口契约 / 关键决策」。`/soc-build` 子智能体按 task ID grep 切片——没有章节化它就只能 dump 整个文件，上下文膨胀且容易漏读。
+- **tasks.md 每个 task 行下内联 AC**：每条 AC 以可测断言开头（"API 返回 200"而不是"API 正常工作"）。`/soc-build` 子智能体会逐字引用 AC-1、AC-2 写入实现计划——AC 写在 design.md 而不内联在 tasks.md，子智能体就漏读。
+
+任务切片的合理性比设计的精巧更决定 `/soc-build` 的成败。在设计阶段就要带着"这件事能不能拆成 N 个独立子智能体一次过"的视角去切。
+
 **在现有代码库中工作：**
 
 - 用探索摘要在提出改动前理解现有模式
@@ -231,6 +241,37 @@ Agent tool (subagent_type: "Explore"):
       - **不要**把 `<context>`、`<rules>`、`<project_context>` 块复制进工件
       - 它们指导你写什么，但**永远不应**出现在输出中
     - **Acceptance Criteria**：确保确认设计中的 acceptance criteria 反映在合适的工件中（design.md、tasks.md）。tasks.md 中**每个任务**都必须有清晰、可测试的 acceptance criteria，实现必须在被认为完成前满足
+
+    #### design.md / tasks.md 结构约定（强制，对齐 `/soc-build` 子智能体协议）
+
+    **为什么强制：** `/soc-build` 把每个任务派发为隔离上下文的子智能体。子智能体按 task ID 去 design.md 里 grep `## Task N.M` 章节读切片、按 tasks.md 里 task 行下的 AC 写实现 checklist。结构不齐 → 子智能体 dump 全文 / 漏读 AC / 规划混乱。
+
+    **design.md 结构：**
+
+    - 按 `## Task N.M` 分章节，章节 ID 与 tasks.md 任务 ID **一一对应**（顺序也一致）
+    - 每个章节含 4 个子段：
+      - **目标**：1-2 句话说明这个任务达成什么
+      - **涉及文件**：要新建/修改的文件清单（路径 + 改动性质）
+      - **接口契约**：对外暴露的 API/类型/事件/DB schema 变化（无则显式写"无"）
+      - **关键决策**：实现者必须知道的 trade-off、约束、与其他任务的耦合点
+    - 横切关注（如统一错误模型、共享类型定义）单独成章，并在每个相关 task 章节里交叉引用
+    - 章节内的代码示例只放契约骨架（接口签名、类型定义），不放完整实现
+
+    **tasks.md 结构：**
+
+    - 每个 task 行格式：`- [ ] N.M <title> [gates: ...] [scope: ...]`
+      - `[gates: ...]` 可选，标明该任务的门禁（`test`、`lint`、`typecheck` 等）；省略则 `/soc-build` 默认跑所有检测到的门禁
+      - `[scope: ...]` 可选，逗号分隔的模块/目录路径，帮子智能体机械化判断"scope 内测试"范围
+    - task 行下方**缩进**列出该任务的 AC，每条以 `AC-K` 编号开头：
+      ```
+      - [ ] 1.2 创建主题切换组件 [gates: test,lint] [scope: src/theme]
+        - AC-1: ThemeSwitcher 渲染时显示 currentTheme 名称
+        - AC-2: 点击切换后 document.documentElement.dataset.theme 在一帧（≤16ms）内更新
+        - AC-3: 非法 theme 值回退到默认主题并触发 onError 回调
+      ```
+    - AC 必须以可测断言开头（"返回 200"、"在 16ms 内更新"、"触发 onError"），禁止模糊词（"性能好"、"体验流畅"、"正常工作"）
+    - 每个 task 的 AC 覆盖：正常路径 ≥ 1 条 + 边界/错误路径 ≥ 1 条
+    - 跨任务依赖（Task 2.1 依赖 Task 1.3 的产物）通过 ID 顺序表达——tasks.md 的 ID 顺序**就是**执行顺序和依赖顺序
 
 
 

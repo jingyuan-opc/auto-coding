@@ -2,7 +2,7 @@
 
 派发 implementer 子智能体时使用本模板。
 
- 本子智能体同时担任实现者与审查者。报告 DONE 前必须完成自审。把 Phase 0 和 Phase Z 两份 checklist 视为承重结构——偷工减料是下游失败的头号原因。
+ 本子智能体同时担任实现者与审查者。报告 DONE 前必须完成自审。
 
 ```
 Agent tool (general-purpose):

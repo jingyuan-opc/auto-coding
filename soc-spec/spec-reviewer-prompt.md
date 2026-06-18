@@ -26,11 +26,31 @@ Agent tool (general-purpose):
     | Clarity | 需求模糊到会导致某人构建错东西 |
     | Scope | 聚焦到能单个实现完成——不覆盖多个独立子系统 |
     | Task coverage | tasks.md 任务覆盖 design.md 的全部内容吗？ |
+    | Task buildability | 任务结构是否对齐 `/soc-build` 子智能体协议（见下） |
+
+    ## Task buildability 检查（关键，对齐 `/soc-build`）
+
+    `/soc-build` 把每个任务派发为隔离上下文的子智能体——子智能体按 task ID
+    去 design.md grep `## Task N.M` 章节读切片、按 tasks.md 里 task 行下的
+    AC 写实现 checklist。下列任何一条不满足，都直接报 issue（不是建议）：
+
+    1. **design.md 按 `## Task N.M` 分章节**：每个 tasks.md 里的任务 ID 在
+       design.md 都有对应的 `## Task N.M` 章节，且顺序一致。缺失章节 →
+       子智能体 dump 全文 → 上下文膨胀 + 规划混乱。
+    2. **tasks.md 每个 task 行下内联 AC**：每条以 `AC-K` 编号开头，缩进在
+       task 行下方。AC 只在 design.md 不在 tasks.md → 子智能体漏读。
+    3. **AC 是可测断言**：以"返回 200"、"在 16ms 内更新"、"触发 onError"
+       开头，**禁止**"性能好"、"体验流畅"、"正常工作"等模糊词。模糊 AC
+       → 子智能体自欺完成。
+    4. **任务粒度自足**：每个任务涉及文件 ≤ 5、对外接口改动 ≤ 2。跨多个
+       不相关模块的任务 → 拆分建议（这种建议**算 issue**，因为它会导致
+       子智能体规划混乱）。
 
     ## 范围边界
 
-    你**只**检查 **completeness、consistency、clarity、scope 和 task coverage**——即
-    "我们把所有东西都写下来了吗，且自洽吗？"
+    你**只**检查 **completeness、consistency、clarity、scope、task coverage
+    和 task buildability**——即
+    "我们把所有东西都写下来了吗，且自洽吗，且 `/soc-build` 能执行吗？"
 
     你**不**检查：YAGNI / 过度设计、架构合理性、模式对齐、
     代码味道风险、migration / rollback / observability。那些是 **architect

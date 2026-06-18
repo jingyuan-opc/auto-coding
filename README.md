@@ -29,10 +29,9 @@ Optional **Visual Companion**: a browser-based tool for showing mockups and diag
 
 ### `/soc-build` — Subagent-Driven Implementation
 
-Each task from the OpenSpec proposal is dispatched to an isolated subagent with precisely crafted context. After every task, two independent reviews run:
+Each task from the OpenSpec proposal is dispatched to an isolated subagent with precisely crafted context. 
 
-1. **Spec compliance review** — verify the implementer built exactly what was requested (code is read directly, reports are not trusted)
-2. **Code quality review** — verify the implementation is clean, secure, and tested
+
 
 Tasks retry up to 2 times per review stage. Three consecutive failures pause the pipeline for human intervention.
 
